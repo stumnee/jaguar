@@ -1,4 +1,4 @@
-name := "play-swagger-reactivemongo"
+name := "jaguar"
 
 version := "1.0-SNAPSHOT"
 
@@ -13,6 +13,7 @@ libraryDependencies ++= Seq(
   "org.reactivemongo"      %% "play2-reactivemongo" % reactiveMongoVer,
   "io.swagger"             %% "swagger-play2"       % "1.6.0",
   "org.webjars"            %  "swagger-ui"          % "3.2.2",
+  "com.typesafe.play" % "play-json-joda_2.12" % "2.6.0",
   "org.scalatestplus.play" %% "scalatestplus-play"  % "3.1.1" % Test
 )
 
