@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 import io.swagger.annotations._
 import models.JsonFormats._
-import models.{Event, EventRepository}
+import models.{Event, EventDao, EventRepository}
 import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}
 import reactivemongo.bson.BSONObjectID
@@ -57,7 +57,7 @@ class EventController @Inject()(cc: ControllerComponents, eventRepository: Event
     )
   )
   def create() = Action.async(parse.json){ req =>
-    req.body.validate[Event].map{ event =>
+    req.body.validate[EventDao].map{ event =>
       eventRepository.add(event).map{ _ =>
         Created
       }

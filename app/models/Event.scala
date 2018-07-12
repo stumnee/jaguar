@@ -1,9 +1,7 @@
 package models
 
-import java.text.SimpleDateFormat
 import javax.inject.Inject
 
-import play.api.mvc.{ Request }
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.{Cursor, ReadPreference}
@@ -11,14 +9,19 @@ import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json._
 import reactivemongo.play.json.collection.JSONCollection
+import play.api.libs.functional.syntax._
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.joda.time.DateTime
 
 
+case class EventDao (
+   title: String,
+   data: String
+)
 
 case class Event (
-  _id:  Option[BSONObjectID],
+  id:  Option[String],
   title: String,
   data: String,
   createdTime: Option[DateTime]
@@ -29,6 +32,34 @@ object JsonFormats{
   import play.api.libs.json.JodaWrites
   import play.api.libs.json.JodaReads
 
+  implicit object eventFormat extends OFormat[Event] {
+    override def reads(json: JsValue): JsResult[Event] = {
+      val jsonObject = Json.parse(json.toString())
+
+      var id: BSONObjectID = null
+
+      (jsonObject \ "_id").validate[BSONObjectID] match {
+        case JsSuccess(value, _) => id = value
+        case error: JsError => id = BSONObjectID.generate()
+      }
+
+      JsSuccess(Event(
+        Some(id.stringify),git
+        (jsonObject \ "title").as[String],
+        (jsonObject \ "data").as[String],
+        Some(new DateTime(id.time))))
+
+    }
+
+    override def writes(event: Event): JsObject = {
+      JsObject(Seq(
+        "id" -> JsString(event.id.get),
+        "title" -> JsString(event.title),
+        "data" -> JsString(event.data),
+        "created" -> JsString(event.createdTime.get.toString)
+      ))
+    }
+  }
 
   val pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
   implicit val dateFormat = Format[DateTime](JodaReads.jodaDateReads(pattern), JodaWrites.jodaDateWrites(pattern))
@@ -41,10 +72,10 @@ object JsonFormats{
 //    new Writes[BSONObjectID]{ def writes(o: BSONObjectID) = JsNumber(o.id) }
 //  )
 
-  implicit val eventFormat: OFormat[Event] = Json.format[Event]
+  implicit val eventDaoFormat: OFormat[EventDao] = Json.format[EventDao]
 //
 //  implicit val eventFormat: OFormat[Event] = (
-//    (__ \ "id").format[Option[BSONObjectID]] and
+//    (__ \ "id").formatNullable[BSONObjectID] and
 //    (__ \ "title").format[String] and
 //      (__ \ "data").format[String] and
 //      (__ \ "created").formatNullable[DateTime]
@@ -89,7 +120,7 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
     })
   }
 
-  def add(item: Event): Future[WriteResult] = {
+  def add(item: EventDao): Future[WriteResult] = {
     eventsCollection.flatMap(_.insert(item))
   }
 
