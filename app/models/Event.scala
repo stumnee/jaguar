@@ -44,7 +44,7 @@ object JsonFormats{
       }
 
       JsSuccess(Event(
-        Some(id.stringify),git
+        Some(id.stringify),
         (jsonObject \ "title").as[String],
         (jsonObject \ "data").as[String],
         Some(new DateTime(id.time))))
@@ -151,7 +151,7 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
           else field -> 1
         }
         if order._1 == "title" || order._1 == "_id"
-      } yield order._1 -> implicitly[Json.JsValueWrapper](Json.toJson(order._2))
+      } yield order._1.replace("id", "_id") -> implicitly[Json.JsValueWrapper](Json.toJson(order._2))
 
       Json.obj(sortBy: _*)
     }

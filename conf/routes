@@ -18,3 +18,8 @@ GET       /api-docs                   controllers.ApiDocsController.redirectToDo
 
 # Map static resources from the /public folder to the /assets URL path
 GET       /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
+
+
+GET     /index                        controllers.IndexController.index
+GET     /testUpload                   controllers.IndexController.testUpload
+POST    /testUploadSubmit             controllers.IndexController.testUploadSubmit
