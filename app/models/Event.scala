@@ -104,13 +104,22 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
 
   def eventsCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("events"))
 
-  def getAll(sortFields: Option[Seq[String]]): Future[Seq[Event]] = {
-    val query = Json.obj()
-    val sortOptions: Option[JsObject] = getSort(sortFields)
+  def getAll(queryString: Map[String,Seq[String]]): Future[Seq[Event]] = {
+    val query = getQuery(queryString)
+
+
+    val cc = queryString.get("_count")
+    val count: Int = cc match {
+      case Some(Vector(value)) => value.toInt
+      case _ => 100
+    }
+
+    val sortOptions: Option[JsObject] = getSort(queryString.get("_sort"), Vector("id", "title", "data"))
+
     eventsCollection.flatMap(_.find(query)
         .sort(sortOptions.getOrElse(Json.obj()))
       .cursor[Event](ReadPreference.primary)
-      .collect[Seq](100, Cursor.FailOnError[Seq[Event]]()))
+      .collect[Seq](count, Cursor.FailOnError[Seq[Event]]()))
   }
 
   def get(id: BSONObjectID): Future[Option[Event]] = {
@@ -142,7 +151,7 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
     eventsCollection.flatMap(_.findAndRemove(selector).map(_.result[Event]))
   }
 
-  private def getSort(sortFields: Option[Seq[String]]): Option[JsObject] =
+  private def getSort(sortFields: Option[Seq[String]], sortableFields: Vector[String]): Option[JsObject] =
     sortFields.map { fields =>
       val sortBy = for {
         order <- fields.map { field =>
@@ -150,10 +159,18 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
             field.drop(1) -> -1
           else field -> 1
         }
-        if order._1 == "title" || order._1 == "_id"
+        if sortableFields.contains(order._1)// == "title" || order._1 == "_id"
       } yield order._1.replace("id", "_id") -> implicitly[Json.JsValueWrapper](Json.toJson(order._2))
 
       Json.obj(sortBy: _*)
     }
 
+  private def getQuery(queryFields: Map[String, Seq[String]]): JsObject = {
+    val filterBy = queryFields
+        .filter(!_._1.startsWith("_"))
+        .map { case (field, vals) =>
+          field->implicitly[Json.JsValueWrapper](Json.toJson(vals.head))
+        }.toSeq
+    Json.obj(filterBy: _*)
+  }
 }

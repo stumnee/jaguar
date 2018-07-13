@@ -21,7 +21,7 @@ class EventController @Inject()(cc: ControllerComponents, eventRepository: Event
     responseContainer = "List"
   )
   def getAll = Action.async { implicit request =>
-    eventRepository.getAll(request.queryString.get("sort")).map{ events =>
+    eventRepository.getAll(request.queryString).map{ events =>
       Ok(Json.toJson(events))
     }
   }
