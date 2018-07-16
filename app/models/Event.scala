@@ -13,6 +13,7 @@ import play.api.libs.functional.syntax._
 
 import scala.concurrent.{ExecutionContext, Future}
 import org.joda.time.DateTime
+import play.api.libs.json.Json.JsValueWrapper
 
 import scala.util.parsing.json.JSONObject
 
@@ -107,7 +108,7 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
   def eventsCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("events"))
 
   def getAll(queryString: Map[String,Seq[String]]): Future[Seq[Event]] = {
-//    val query = Json.obj("title"->Json.obj("$lt"->"egg".toString))//BSONObjectID("5b3dde17c82b9ea9311bb451")))
+//    val query = Json.obj("title"->Json.obj("$lt"->BSONObjectID("5b3dde17c82b9ea9311bb451")))
     val query = getQuery(queryString)
 
 
@@ -168,19 +169,34 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
       Json.obj(sortBy: _*)
     }
 
+  private def getFieldValue(field: String, value: String): JsValueWrapper = {
+    if (field == "id") {
+      BSONObjectID(value)
+    } else if (field == "created") {
+      BSONObjectID.fromTime(DateTime.parse(value).getMillis)
+    } else {
+      value
+    }
+  }
+  private def getFieldName(field: String): String = {
+    if (field == "id" || field == "created") {
+      "_id"
+    } else {
+      field
+    }
+  }
   private def getQuery(queryFields: Map[String, Seq[String]]): JsObject = {
     val filterBy = queryFields
         .filter(!_._1.startsWith("_"))
-        .map { case (field, vals) =>
-          var (key, value) = (field, Json.toJson(vals.head))
-
+        .map { case (field, values) =>
           Map(">"->"$gt", "<"->"$lt").filterKeys(field.contains(_)).map { t =>
             val tokens = field.split(t._1)
-            tokens.head -> implicitly[Json.JsValueWrapper](Json.obj(t._2 -> tokens(1)))
+            getFieldName(tokens.head) -> implicitly[Json.JsValueWrapper](Json.obj(t._2 -> getFieldValue(tokens.head, tokens(1))))
           }.headOption match {
             case Some(obj)  => obj
-            case _          => field -> implicitly[Json.JsValueWrapper](Json.toJson(vals.head))
+            case _          => getFieldName(field) -> implicitly[Json.JsValueWrapper](getFieldValue(field, values.head))
           }
+
         }.toSeq
     Json.obj(filterBy: _*)
   }
