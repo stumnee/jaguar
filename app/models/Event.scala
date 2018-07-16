@@ -14,6 +14,8 @@ import play.api.libs.functional.syntax._
 import scala.concurrent.{ExecutionContext, Future}
 import org.joda.time.DateTime
 
+import scala.util.parsing.json.JSONObject
+
 
 case class EventDao (
    title: String,
@@ -105,6 +107,7 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
   def eventsCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("events"))
 
   def getAll(queryString: Map[String,Seq[String]]): Future[Seq[Event]] = {
+//    val query = Json.obj("title"->Json.obj("$lt"->"egg".toString))//BSONObjectID("5b3dde17c82b9ea9311bb451")))
     val query = getQuery(queryString)
 
 
@@ -169,8 +172,17 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
     val filterBy = queryFields
         .filter(!_._1.startsWith("_"))
         .map { case (field, vals) =>
-          field->implicitly[Json.JsValueWrapper](Json.toJson(vals.head))
+          var (key, value) = (field, Json.toJson(vals.head))
+
+          Map(">"->"$gt", "<"->"$lt").filterKeys(field.contains(_)).map { t =>
+            val tokens = field.split(t._1)
+            tokens.head -> implicitly[Json.JsValueWrapper](Json.obj(t._2 -> tokens(1)))
+          }.headOption match {
+            case Some(obj)  => obj
+            case _          => field -> implicitly[Json.JsValueWrapper](Json.toJson(vals.head))
+          }
         }.toSeq
     Json.obj(filterBy: _*)
   }
 }
+
