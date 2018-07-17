@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.{Cursor, ReadPreference}
+import reactivemongo.api.{Cursor, QueryOpts, ReadPreference}
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json._
@@ -107,6 +107,8 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
 
   def eventsCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("events"))
 
+
+
   def getAll(queryString: Map[String,Seq[String]]): Future[Seq[Event]] = {
 //    val query = Json.obj("title"->Json.obj("$lt"->BSONObjectID("5b3dde17c82b9ea9311bb451")))
     val query = getQuery(queryString)
@@ -122,6 +124,7 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
 
     eventsCollection.flatMap(_.find(query)
         .sort(sortOptions.getOrElse(Json.obj()))
+        .options(QueryOpts(skipN = getSkipCount(count, queryString)))
       .cursor[Event](ReadPreference.primary)
       .collect[Seq](count, Cursor.FailOnError[Seq[Event]]()))
   }
@@ -185,6 +188,22 @@ class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi:
       field
     }
   }
+
+  def getSkipCount(count: Int, queryString: Map[String, Seq[String]]): Int = {
+    var skip = 0
+    queryString.get("_offset") match {
+      case Some(n) => skip = n.head.toInt
+      case _ =>
+    }
+
+    val page = queryString.get("_page") match {
+      case Some(v) => v.head.toInt - 1
+      case _ => 0
+    }
+
+    skip + count * page
+  }
+
   private def getQuery(queryFields: Map[String, Seq[String]]): JsObject = {
     val filterBy = queryFields
         .filter(!_._1.startsWith("_"))
