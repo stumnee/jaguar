@@ -1,28 +1,40 @@
 package controllers
 
 import java.nio.file.Paths
-import javax.inject._
+import javax.inject.Inject
 
-import play.api._
-import play.modules.reactivemongo.{MongoController, ReactiveMongoApi, ReactiveMongoComponents}
-import play.api.libs.json.{JsString, Json}
-import play.api.mvc._
-import play.modules.reactivemongo.{MongoController, ReactiveMongoApi}
-import reactivemongo.api.gridfs.{GridFS, ReadFile}
-import reactivemongo.play.json.JSONSerializationPack
-
-import scala.concurrent.duration.Duration
-import play.api.mvc.BaseController
-
-import scala.concurrent.{Await, Future}
 import scala.util.Failure
 
-@Singleton
+import org.joda.time.DateTime
+
+import scala.concurrent.{ Await, Future, duration }, duration.Duration
+
+import play.api.Logger
+
+import play.api.i18n.{ I18nSupport, MessagesApi }
+import play.api.mvc.{
+  Action, AbstractController, ControllerComponents, Request, AnyContent
+}
+import play.api.libs.json.{ Json, JsObject, JsString }
+
+import reactivemongo.api.Cursor
+import reactivemongo.api.gridfs.{ GridFS, ReadFile }
+
+import play.modules.reactivemongo.{
+  MongoController, ReactiveMongoApi, ReactiveMongoComponents
+}
+
+import reactivemongo.play.json._
+import reactivemongo.play.json.collection._
+
 class IndexController @Inject() (
       cc: ControllerComponents,
       val reactiveMongoApi: ReactiveMongoApi,
       implicit val materializer: akka.stream.Materializer
   ) extends AbstractController(cc) with MongoController with ReactiveMongoComponents {
+
+  import java.util.UUID
+  import MongoController.readFileReads
 
   type JSONReadFile = ReadFile[JSONSerializationPack.type, JsString]
 
@@ -66,6 +78,9 @@ class IndexController @Inject() (
 
       val futureUpdate = for {
         file <- futureFile
+        updateResult <- fs.files.update(
+          Json.obj("_id" -> file.id),
+          Json.obj("$set" -> Json.obj("article" -> 2)))
       } yield Redirect(routes.IndexController.testUpload)
 
       futureUpdate.recover {
