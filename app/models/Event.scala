@@ -19,12 +19,14 @@ import scala.util.parsing.json.JSONObject
 
 
 case class EventDao (
+   tags: Seq[String],
    title: String,
    data: String
 )
 
 case class Event (
   id:  Option[String],
+  tags: Seq[String],
   title: String,
   data: String,
   createdTime: Option[DateTime]
@@ -48,6 +50,7 @@ object JsonFormats{
 
       JsSuccess(Event(
         Some(id.stringify),
+        (jsonObject \ "tags").as[Seq[String]],
         (jsonObject \ "title").as[String],
         (jsonObject \ "data").as[String],
         Some(new DateTime(id.time))))
@@ -57,6 +60,9 @@ object JsonFormats{
     override def writes(event: Event): JsObject = {
       JsObject(Seq(
         "id" -> JsString(event.id.get),
+        "tags" -> JsArray(event.tags.map{ tag=>
+          JsString(tag)
+        }.toSeq),
         "title" -> JsString(event.title),
         "data" -> JsString(event.data),
         "created" -> JsString(event.createdTime.get.toString)
