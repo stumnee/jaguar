@@ -20,6 +20,7 @@ import scala.util.parsing.json.JSONObject
 
 case class EventDao (
    tags: Seq[String],
+   files: Option[Seq[String]],
    title: String,
    data: String
 )
@@ -27,6 +28,7 @@ case class EventDao (
 case class Event (
   id:  Option[String],
   tags: Seq[String],
+  files: Seq[String],
   title: String,
   data: String,
   createdTime: Option[DateTime]
@@ -42,15 +44,21 @@ object JsonFormats{
       val jsonObject = Json.parse(json.toString())
 
       var id: BSONObjectID = null
+      var files: Seq[String] = null
 
       (jsonObject \ "_id").validate[BSONObjectID] match {
         case JsSuccess(value, _) => id = value
         case error: JsError => id = BSONObjectID.generate()
       }
+      (jsonObject \ "files").validate[Seq[String]] match {
+        case JsSuccess(value, _) => files = value
+        case error: JsError => files = Seq()
+      }
 
       JsSuccess(Event(
         Some(id.stringify),
         (jsonObject \ "tags").as[Seq[String]],
+        files,
         (jsonObject \ "title").as[String],
         (jsonObject \ "data").as[String],
         Some(new DateTime(id.time))))
@@ -62,7 +70,10 @@ object JsonFormats{
         "id" -> JsString(event.id.get),
         "tags" -> JsArray(event.tags.map{ tag=>
           JsString(tag)
-        }.toSeq),
+        }),
+        "files" -> JsArray(event.tags.map{ file=>
+          JsString(file)
+        }),
         "title" -> JsString(event.title),
         "data" -> JsString(event.data),
         "created" -> JsString(event.createdTime.get.toString)
