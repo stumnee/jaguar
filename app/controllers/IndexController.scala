@@ -76,13 +76,20 @@ class IndexController @Inject() (
         case Failure(cause) => Logger.error("Fails to save file", cause)
       }
 
+      println(      futureFile)
+
       val futureUpdate = for {
         file <- futureFile
-        updateResult <- fs.files.update(
-          Json.obj("_id" -> file.id),
-          Json.obj("$set" -> Json.obj("article" -> 2)))
-      } yield Redirect(routes.IndexController.testUpload)
 
+//        updateResult <- fs.files.update(
+//          Json.obj("_id" -> file.id),
+//          Json.obj("$set" -> Json.obj("article" -> 2)))
+      } yield Ok(Json.toJson(Map("id"->file.id)))//Redirect(routes.IndexController.testUpload)
+
+      //Ok(Json.toJson(futureUpdate))
+//      futureUpdate.onComplete{
+//        _ => Ok()
+//      }
       futureUpdate.recover {
         case e => InternalServerError(e.getMessage())
       }
