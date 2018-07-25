@@ -23,3 +23,5 @@ GET       /assets/*file               controllers.Assets.versioned(path="/public
 GET     /index                        controllers.IndexController.index
 GET     /testUpload                   controllers.IndexController.testUpload
 POST    /testUploadSubmit             controllers.IndexController.testUploadSubmit
+
+GET     /ws                           controllers.IndexController.ws
