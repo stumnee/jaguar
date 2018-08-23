@@ -2,6 +2,7 @@ package controllers
 
 import javax.inject.Inject
 
+import actors.MyWebSocketActor
 import io.swagger.annotations._
 import models.JsonFormats._
 import models.{Event, EventDao, EventRepository}
@@ -58,6 +59,7 @@ class EventController @Inject()(cc: ControllerComponents, eventRepository: Event
   )
   def create() = Action.async(parse.json){ req =>
     req.body.validate[EventDao].map{ event =>
+      MyWebSocketActor.broadcast(event.toString)
       eventRepository.add(event).map{ _ =>
         Created
       }
