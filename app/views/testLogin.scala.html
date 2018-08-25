@@ -1,0 +1,16 @@
+@import helper._
+
+@()(implicit request: RequestHeader)
+
+
+@helper.form(action = helper.CSRF(routes.IndexController.testLoginSubmit)) {
+    <div>
+        <input type="text" name="username">
+    </div>
+    <div>
+        <input type="text" name="password">
+    </div>
+    <div>
+        <input type="submit" class="btn">
+    </div>
+}

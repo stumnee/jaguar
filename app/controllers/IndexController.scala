@@ -44,6 +44,21 @@ class IndexController @Inject() (
     Ok(views.html.index())
   }
 
+
+  def testLogin() = Action { implicit  request: Request[AnyContent] =>
+    request.session.get("connected").map { user =>
+      Ok("Hello " + user)
+    }.getOrElse {
+      Ok(views.html.testLogin())
+    }
+
+  }
+
+  def testLoginSubmit() = Action { implicit request =>
+    Ok("Welcome!").withSession(
+      "connected" -> "user@gmail.com")
+  }
+
   def testUpload() = Action { implicit  request: Request[AnyContent] =>
     Ok(views.html.testUpload())
   }
