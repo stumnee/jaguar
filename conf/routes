@@ -20,8 +20,9 @@ GET     /index                        controllers.IndexController.index
 GET     /testUpload                   controllers.IndexController.testUpload
 POST    /testUploadSubmit             controllers.IndexController.testUploadSubmit
 
-GET     /testLogin                    controllers.IndexController.testLogin
-POST    /testLoginSubmit              controllers.IndexController.testLoginSubmit
+GET     /testLogin                    controllers.LoginController.testLogin
+GET     /testLogout                    controllers.LoginController.testLogout
+POST    /testLoginSubmit              controllers.LoginController.testLoginSubmit
 
 GET     /ws                           controllers.IndexController.ws
 

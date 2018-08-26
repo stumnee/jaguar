@@ -6,9 +6,11 @@ import javax.inject._
 import akka.actor.ActorRef
 import akka.NotUsed
 import akka.util.Timeout
+import models.UserFormModel
 
 import scala.util.Failure
 import org.joda.time.DateTime
+import play.api.data.Form
 //import actors._
 
 import scala.concurrent.{Await, Future, duration}
@@ -33,7 +35,6 @@ class IndexController @Inject() (
       implicit val materializer: akka.stream.Materializer
   ) extends AbstractController(cc) with MongoController with ReactiveMongoComponents {
 
-  import java.util.UUID
   import MongoController.readFileReads
 
   type JSONReadFile = ReadFile[JSONSerializationPack.type, JsString]
@@ -41,23 +42,17 @@ class IndexController @Inject() (
   implicit def ec = cc.executionContext
 
   def index() = Action { implicit request: Request[AnyContent] =>
-    Ok(views.html.index())
-  }
 
-
-  def testLogin() = Action { implicit  request: Request[AnyContent] =>
-    request.session.get("connected").map { user =>
-      Ok("Hello " + user)
+    request.session.get("user").map { user =>
+      Ok(views.html.index(user))
     }.getOrElse {
-      Ok(views.html.testLogin())
+      Ok(views.html.index(null))
     }
 
+
+
   }
 
-  def testLoginSubmit() = Action { implicit request =>
-    Ok("Welcome!").withSession(
-      "connected" -> "user@gmail.com")
-  }
 
   def testUpload() = Action { implicit  request: Request[AnyContent] =>
     Ok(views.html.testUpload())
