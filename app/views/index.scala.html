@@ -2,5 +2,7 @@
 
 @main("Welcome to Play") {
   <h1>Welcome @name!</h1>
-    <a href="testLogout">Sign out</a>
+    @if(name != null) {
+        <a href="testLogout">Sign out</a>
+    }
 }
