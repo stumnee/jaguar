@@ -2,15 +2,12 @@ package models
 
 import javax.inject.Inject
 
-import org.joda.time.DateTime
-import play.api.libs.json.{JsObject, Json}
-import play.api.libs.json.Json.JsValueWrapper
 import play.modules.reactivemongo.ReactiveMongoApi
-import reactivemongo.api.{Cursor, QueryOpts, ReadPreference}
-import reactivemongo.api.commands.WriteResult
+import reactivemongo.api.{Cursor, ReadPreference}
 import reactivemongo.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.play.json.collection.JSONCollection
-
+import play.api.libs.json.Json
+import reactivemongo.play.json._
 import scala.concurrent.{ExecutionContext, Future}
 
 case class User (
@@ -20,21 +17,34 @@ case class User (
 
 )
 
+
+object UserJsonFormats{
+  import play.api.libs.json._
+
+  implicit val userFormat: OFormat[User] = Json.format[User]
+}
+
 class UserRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi: ReactiveMongoApi) {
-  import JsonFormats._
 
+  import UserJsonFormats._
 
-  def eventsCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("users"))
+  def usersCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("users"))
 
 
 
   def getAll(): Future[Seq[User]] = {
 
+    val query = Json.obj()
 
-
-    eventsCollection.flatMap(_.find()
+    usersCollection.flatMap(_.find(query)
       .cursor[User](ReadPreference.primary)
       .collect[Seq](100, Cursor.FailOnError[Seq[User]]()))
+  }
+
+  def getByUsername(username: String): Future[Option[User]] = {
+    val query = BSONDocument("username" -> username)
+
+    usersCollection.flatMap(_.find(query).one[User])
   }
 
 }
