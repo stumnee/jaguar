@@ -3,7 +3,7 @@
 @()(implicit request: RequestHeader)
 
 
-@helper.form(action = helper.CSRF(routes.IndexController.testUploadSubmit), 'enctype -> "multipart/form-data") {
+@helper.form(action = helper.CSRF(routes.UploadController.testUploadSubmit), 'enctype -> "multipart/form-data") {
     <input type="file" name="testFile">
     <div>
         <input type="submit" class="btn">

@@ -17,8 +17,9 @@ GET       /assets/*file               controllers.Assets.versioned(path="/public
 
 
 GET     /index                        controllers.IndexController.index
-GET     /testUpload                   controllers.IndexController.testUpload
-POST    /testUploadSubmit             controllers.IndexController.testUploadSubmit
+
+GET     /testUpload                   controllers.UploadController.testUpload
+POST    /testUploadSubmit             controllers.UploadController.testUploadSubmit
 
 GET     /testLogin                    controllers.LoginController.testLogin
 GET     /testLogout                    controllers.LoginController.testLogout

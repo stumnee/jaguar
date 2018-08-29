@@ -1,17 +1,14 @@
 @import helper._
 
-@(form: Form[UserFormModel])(implicit request: MessagesRequestHeader)
+@(form: Form[LoginForm.Data])(implicit request: MessagesRequestHeader)
 
-
-    @if(form.hasGlobalErrors) {
-        @form.globalErrors.map { error: FormError =>
-            <div>
-                @error.key: @error.message
-            </div>
-        }
+    @form.errors.map { error: FormError =>
+        <div style="color: orange">
+            @error.key: @error.message
+        </div>
     }
 
-@helper.form(action = helper.CSRF(routes.LoginController.testLoginSubmit)) {
+        @helper.form(action = helper.CSRF(routes.LoginController.testLoginSubmit)) {
     @helper.inputText(form("username"))
 
     @helper.inputText(form("password"))

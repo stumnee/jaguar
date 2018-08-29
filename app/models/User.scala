@@ -11,10 +11,9 @@ import reactivemongo.play.json._
 import scala.concurrent.{ExecutionContext, Future}
 
 case class User (
-  name: String,
-  email: String,
+  id:  Option[String],
+  username: String,
   password: String
-
 )
 
 
