@@ -14,6 +14,7 @@ libraryDependencies ++= Seq(
   "io.swagger"             %% "swagger-play2"       % "1.6.0",
   "org.webjars"            %  "swagger-ui"          % "3.2.2",
   "com.typesafe.play" % "play-json-joda_2.12" % "2.6.0",
+  "org.mindrot" % "jbcrypt" % "0.3m",
   "org.scalatestplus.play" %% "scalatestplus-play"  % "3.1.1" % Test
 )
 
