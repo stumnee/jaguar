@@ -13,7 +13,7 @@ class IndexController @Inject()(
       cc: ControllerComponents)(
       implicit val system: ActorSystem,
       implicit val materializer: akka.stream.Materializer
-  ) extends AbstractController(cc) {
+  ) extends AbstractController(cc) with TokenAuthenication  {
 
 
 
@@ -27,6 +27,10 @@ class IndexController @Inject()(
 
   def testWebsocket() = Action { request =>
     Ok(views.html.testWebsocket())
+  }
+
+  def testToken = withAPIToken { request =>
+    Ok("Token Validated")
   }
 
   def ws = WebSocket.acceptOrResult[String, String] { request =>
