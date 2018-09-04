@@ -25,6 +25,7 @@ GET     /testLogin                    controllers.LoginController.testLogin
 GET     /testLogout                    controllers.LoginController.testLogout
 POST    /testLoginSubmit              controllers.LoginController.testLoginSubmit
 
+GET     /testWebsocket                controllers.IndexController.testWebsocket
 GET     /ws                           controllers.IndexController.ws
 
 
