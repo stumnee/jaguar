@@ -24,7 +24,7 @@ trait TokenAuthenication { self: AbstractController =>
     * @return
     */
   def withAPIToken(f: => Request[AnyContent] => Result) = Action { implicit request =>
-    request.headers.get("Authorization").flatMap { authHeaderToken =>
+    request.headers.get("Authorization") flatMap { authHeaderToken =>
       extractToken(authHeaderToken) flatMap { token =>
         validateToken(token) flatMap { _ =>
           Some(f(request))
