@@ -15,7 +15,10 @@ DELETE    /events/:id                  controllers.EventController.delete(id: re
 POST    /users                          controllers.UserController.create
 
 + nocsrf
-DELETE    /users                          controllers.UserController.delete(username: String)
+PATCH     /users/:username             controllers.UserController.update(username: String)
+
++ nocsrf
+DELETE    /users/:username             controllers.UserController.delete(username: String)
 
 
 # Map static resources from the /public folder to the /assets URL path

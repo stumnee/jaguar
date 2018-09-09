@@ -29,6 +29,10 @@ object UserJsonFormats{
 
   implicit val userFormat: OFormat[User] = Json.format[User]
   implicit val userDaoFormat: OFormat[UserDao] = Json.format[UserDao]
+
+  def encryptPassword(password: String): String = {
+    BCrypt.hashpw(password, BCrypt.gensalt())
+  }
 }
 
 class UserRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi: ReactiveMongoApi) {
@@ -40,10 +44,22 @@ class UserRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi: 
 
 
   def add(item: UserDao): Future[WriteResult] = {
-    val user: User = User(None, item.username, BCrypt.hashpw(item.password, BCrypt.gensalt()))
+    val user: User = User(None, item.username, encryptPassword(item.password))
     usersCollection.flatMap(_.insert(user))
   }
 
+  def update(username: String, user: UserDao): Future[Option[User]] = {
+
+    val selector = BSONDocument("username" -> username)
+    val updateModifier = BSONDocument(
+      "$set" -> BSONDocument(
+        "password" -> encryptPassword(user.password))
+    )
+
+    usersCollection.flatMap(
+      _.findAndUpdate(selector, updateModifier, fetchNewObject = true).map(_.result[User])
+    )
+  }
 
   def delete(username: String): Future[Option[User]] = {
     val selector = BSONDocument("username" -> username)
