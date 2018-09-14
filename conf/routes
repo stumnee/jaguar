@@ -15,6 +15,9 @@ DELETE    /events/:id                  controllers.EventController.delete(id: re
 POST    /users                          controllers.UserController.create
 
 + nocsrf
+POST    /users/:username/token          controllers.UserController.createToken
+
++ nocsrf
 PATCH     /users/:username             controllers.UserController.update(username: String)
 
 + nocsrf

@@ -3,7 +3,7 @@ package controllers
 import javax.inject.Inject
 
 import io.swagger.annotations._
-import models.{Event, UserDao, UserRepository}
+import models.{Event, TokenRepository, UserDao, UserRepository}
 import play.api.mvc.{AbstractController, ControllerComponents}
 
 import scala.concurrent.Future
@@ -15,7 +15,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 @Api(value = "/users")
-class UserController @Inject()(cc: ControllerComponents, userRepository: UserRepository) extends AbstractController(cc) {
+class UserController @Inject()(cc: ControllerComponents, userRepository: UserRepository, tokenRepository: TokenRepository) extends AbstractController(cc) {
   @ApiImplicitParams(Array(
     new ApiImplicitParam(value = "The User to add, in Json Format", required = true, dataType = "models.UserDao", paramType = "body")
   ))
@@ -27,6 +27,13 @@ class UserController @Inject()(cc: ControllerComponents, userRepository: UserRep
     }.getOrElse(Future.successful(BadRequest("Invalid User format")))
   }
 
+  def createToken(username: String) = Action.async { req =>
+    userRepository.getByUsername(username) map {
+      case Some(user) => Ok(tokenRepository.create(user.id))
+      case None => NotFound
+    }
+
+  }
 
   @ApiOperation(
     value = "Update a User",
