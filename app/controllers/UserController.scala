@@ -3,7 +3,7 @@ package controllers
 import javax.inject.Inject
 
 import io.swagger.annotations._
-import models.{Event, TokenRepository, UserDao, UserRepository}
+import models._
 import play.api.mvc.{AbstractController, ControllerComponents}
 
 import scala.concurrent.Future
@@ -12,6 +12,7 @@ import play.api.libs.json.Json
 import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import TokenJsonFormats._
 
 
 @Api(value = "/users")
@@ -28,9 +29,18 @@ class UserController @Inject()(cc: ControllerComponents, userRepository: UserRep
   }
 
   def createToken(username: String) = Action.async { req =>
-    userRepository.getByUsername(username) map {
-      case Some(user) => Ok(tokenRepository.create(user.id))
-      case None => NotFound
+
+    userRepository.getByUsername(username) flatMap { userOption: Option[User] =>
+
+      userOption.map{user=>
+        user._id.map{ id=>
+          tokenRepository.create(BSONObjectID.generate()).map{results=>
+            Created(Json.toJson(results.get))
+          }
+        }.getOrElse(Future.successful(Ok("")))
+      }.getOrElse(Future.successful(Ok("")))
+
+
     }
 
   }
