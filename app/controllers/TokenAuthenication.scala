@@ -5,17 +5,19 @@ import javax.inject.Inject
 import models.TokenRepository
 import play.api.mvc._
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+
 trait TokenAuthenication { self: AbstractController =>
 
   @Inject() val tokenRepository: TokenRepository
 
   def validateToken(token: String): Option[Boolean] = {
-
-    tokenRepository.getToken(token)
-    if (token == "123")
-      Some(true)
-    else
-      None
+    Await.result(tokenRepository.getToken(token), 5 seconds) match {
+      case Some(_) => Some(true)
+      case _ => None
+    }
   }
 
   def extractToken(authHeader: String): Option[String] = {
@@ -33,6 +35,7 @@ trait TokenAuthenication { self: AbstractController =>
   def withAPIToken(f: => Request[AnyContent] => Result) = Action { implicit request =>
     request.headers.get("Authorization") flatMap { authHeaderToken =>
       extractToken(authHeaderToken) flatMap { token =>
+
         validateToken(token) flatMap { _ =>
           Some(f(request))
         }
