@@ -2,22 +2,20 @@ package controllers
 
 import javax.inject.Inject
 
-import models.TokenRepository
+import models.{Token, TokenRepository}
 import play.api.mvc._
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 
 trait TokenAuthenication { self: AbstractController =>
 
   @Inject() val tokenRepository: TokenRepository
 
-  def validateToken(token: String): Option[Boolean] = {
-    Await.result(tokenRepository.getToken(token), 5 seconds) match {
-      case Some(_) => Some(true)
-      case _ => None
-    }
+  def validateToken(token: String): Future[Option[Token]] = {
+    tokenRepository.getToken(token)
   }
 
   def extractToken(authHeader: String): Option[String] = {
@@ -32,15 +30,18 @@ trait TokenAuthenication { self: AbstractController =>
     * @param f
     * @return
     */
-  def withAPIToken(f: => Request[AnyContent] => Result) = Action { implicit request =>
-    request.headers.get("Authorization") flatMap { authHeaderToken =>
-      extractToken(authHeaderToken) flatMap { token =>
+  def withAPIToken(f: => Request[AnyContent] => Result) = Action.async { implicit request =>
+    val token = request.headers.get("Authorization") flatMap { authHeaderToken =>
+      extractToken(authHeaderToken)
+    }
 
-        validateToken(token) flatMap { _ =>
-          Some(f(request))
+    token match {
+      case Some(t) => validateToken(t) map {
+          case Some(_) => f(request)
+          case _ => Unauthorized("Invalid API token")
         }
-      }
-    } getOrElse Unauthorized("Invalid API token")
+      case _ => Future.successful(Unauthorized("No valid API token"))
+    }
   }
 
 }
