@@ -4,12 +4,14 @@ import javax.inject._
 
 import actors._
 import akka.actor.ActorSystem
+import models.TokenRepository
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
 
 import scala.concurrent.Future
 
 class IndexController @Inject()(
+                               val tokenRepository: TokenRepository,
       cc: ControllerComponents)(
       implicit val system: ActorSystem,
       implicit val materializer: akka.stream.Materializer

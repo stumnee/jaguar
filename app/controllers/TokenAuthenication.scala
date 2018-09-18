@@ -1,10 +1,17 @@
 package controllers
 
+import javax.inject.Inject
+
+import models.TokenRepository
 import play.api.mvc._
 
 trait TokenAuthenication { self: AbstractController =>
 
+  @Inject() val tokenRepository: TokenRepository
+
   def validateToken(token: String): Option[Boolean] = {
+
+    tokenRepository.getToken(token)
     if (token == "123")
       Some(true)
     else

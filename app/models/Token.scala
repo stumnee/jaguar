@@ -6,6 +6,7 @@ import javax.inject.Inject
 
 import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import org.joda.time.DateTime
+import play.api.libs.json.Json
 import play.api.mvc.Results
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
@@ -51,11 +52,16 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     val token = Token(BSONObjectID.generate(), userId, generateToken(), new DateTime().plusDays(DefaultExpirationDays))
 
     for {
-      nu <- tokensCollection.flatMap(_.insert(token))
+      _ <- tokensCollection.flatMap(_.insert(token))
       createdToken <- tokensCollection.flatMap(_.find(BSONDocument("_id" -> token._id)).one[Token])
     } yield {
       createdToken
     }
 
+  }
+
+  def getToken(tokenStr: String): Future[Option[Token]] = {
+    val query = Json.obj("token"->tokenStr)
+    tokensCollection.flatMap(_.find(query).one[Token])
   }
 }
