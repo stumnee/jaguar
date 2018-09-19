@@ -4,18 +4,20 @@ import javax.inject._
 
 import actors._
 import akka.actor.ActorSystem
+import io.swagger.annotations.{Api, ApiOperation, ApiResponse, ApiResponses}
 import models.TokenRepository
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
 
 import scala.concurrent.Future
 
+@Api(value = "/index")
 class IndexController @Inject()(
                                val tokenRepository: TokenRepository,
       cc: ControllerComponents)(
       implicit val system: ActorSystem,
       implicit val materializer: akka.stream.Materializer
-  ) extends AbstractController(cc) with TokenAuthenication  {
+  ) extends AbstractController(cc) with TokenAuthentication  {
 
 
 
@@ -31,7 +33,16 @@ class IndexController @Inject()(
     Ok(views.html.testWebsocket())
   }
 
-  def testToken = withAPIToken { request =>
+  @ApiOperation(
+    value = "Test API Token",
+    response = classOf[Void],
+    code = 200
+  )
+  @ApiResponses(Array(
+    new ApiResponse(code = 400, message = "Invalid API Token")
+  )
+  )
+  def testToken = withAPIToken { _ =>
     Ok("Token Validated")
   }
 

@@ -20,6 +20,7 @@ case class Token (
   _id: BSONObjectID,
   userId: BSONObjectID,
   token: String,
+  revoked: Option[DateTime],
   expiry: DateTime
 )
 
@@ -49,7 +50,7 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
   }
 
   def create(userId: BSONObjectID): Future[Option[Token]] = {
-    val token = Token(BSONObjectID.generate(), userId, generateToken(), new DateTime().plusDays(DefaultExpirationDays))
+    val token = Token(BSONObjectID.generate(), userId, generateToken(), None, new DateTime().plusDays(DefaultExpirationDays))
 
     for {
       _ <- tokensCollection.flatMap(_.insert(token))

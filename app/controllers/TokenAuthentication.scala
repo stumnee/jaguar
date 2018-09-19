@@ -3,14 +3,14 @@ package controllers
 import javax.inject.Inject
 
 import models.{Token, TokenRepository}
+import org.joda.time.DateTime
 import play.api.mvc._
 
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 
-trait TokenAuthenication { self: AbstractController =>
+trait TokenAuthentication { self: AbstractController =>
 
   @Inject() val tokenRepository: TokenRepository
 
@@ -31,13 +31,16 @@ trait TokenAuthenication { self: AbstractController =>
     * @return
     */
   def withAPIToken(f: => Request[AnyContent] => Result) = Action.async { implicit request =>
-    val token = request.headers.get("Authorization") flatMap { authHeaderToken =>
+    val authToken = request.headers.get("Authorization") flatMap { authHeaderToken =>
       extractToken(authHeaderToken)
     }
 
-    token match {
+    authToken match {
       case Some(t) => validateToken(t) map {
-          case Some(_) => f(request)
+          case Some(token) => if (new DateTime().isAfter(token.expiry))
+            Unauthorized("API token expired")
+          else
+            token.revoked.fold(f(request)) {_ => Unauthorized("API token revoked") }
           case _ => Unauthorized("Invalid API token")
         }
       case _ => Future.successful(Unauthorized("No valid API token"))
