@@ -31,18 +31,27 @@ class UserController @Inject()(cc: ControllerComponents, userRepository: UserRep
   def createToken(username: String) = Action.async { req =>
 
     userRepository.getByUsername(username) flatMap { userOption: Option[User] =>
-
       userOption.map{user=>
-        user._id.map{ id=>
-          tokenRepository.create(BSONObjectID.generate()).map{results=>
+          tokenRepository.create(user.username).map{results=>
             Created(Json.toJson(results.get))
           }
-        }.getOrElse(Future.successful(Ok("")))
       }.getOrElse(Future.successful(Ok("")))
-
-
     }
+  }
 
+  def deleteToken(username: String, token: String) = Action.async { req =>
+
+    tokenRepository.delete(username, token).map {
+      case Some(t) => Ok(Json.toJson(t))
+      case None => NotFound
+    }
+  }
+
+  def revokeToken(username: String, token: String) = Action.async { req =>
+    tokenRepository.revoke(username, token).map {
+      case Some(t) => Ok(Json.toJson(t))
+      case None => NotFound
+    }
   }
 
   @ApiOperation(

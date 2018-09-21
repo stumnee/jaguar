@@ -18,6 +18,12 @@ POST    /users                          controllers.UserController.create
 POST    /users/:username/token          controllers.UserController.createToken(username: String)
 
 + nocsrf
+DELETE    /users/:username/token/:token controllers.UserController.deleteToken(username: String, token: String)
+
++ nocsrf
+PATCH    /users/:username/token/:token controllers.UserController.revokeToken(username: String, token: String)
+
++ nocsrf
 PATCH     /users/:username             controllers.UserController.update(username: String)
 
 + nocsrf

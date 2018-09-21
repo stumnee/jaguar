@@ -10,7 +10,7 @@ import play.api.libs.json.Json
 import play.api.mvc.Results
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.bson.{BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
+import reactivemongo.bson.{BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
 import reactivemongo.play.json._
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -18,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class Token (
   _id: BSONObjectID,
-  userId: BSONObjectID,
+  username: String,
   token: String,
   revoked: Option[DateTime],
   expiry: DateTime
@@ -49,8 +49,8 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     new BigInteger(TokenSize * 5, random).toString(32)
   }
 
-  def create(userId: BSONObjectID): Future[Option[Token]] = {
-    val token = Token(BSONObjectID.generate(), userId, generateToken(), None, new DateTime().plusDays(DefaultExpirationDays))
+  def create(username: String): Future[Option[Token]] = {
+    val token = Token(BSONObjectID.generate(), username, generateToken(), None, new DateTime().plusDays(DefaultExpirationDays))
 
     for {
       _ <- tokensCollection.flatMap(_.insert(token))
@@ -60,6 +60,23 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     }
 
   }
+
+  def delete(username: String, token: String): Future[Option[Token]] = {
+    val query = Json.obj("token" -> token, "username"->username)
+    tokensCollection.flatMap(_.findAndRemove(query).map(_.result[Token]))
+  }
+
+  def revoke(username: String, token: String): Future[Option[Token]] = {
+    val query = Json.obj("token" -> token, "username"->username)
+    val updateModifier = BSONDocument(
+      "$set" -> BSONDocument(
+        "revoked" -> BSONDateTime(new DateTime().getMillis)
+
+      )
+    )
+    tokensCollection.flatMap(_.findAndUpdate(query, updateModifier, fetchNewObject = true).map(_.result[Token]))
+  }
+
 
   def getToken(tokenStr: String): Future[Option[Token]] = {
     val query = Json.obj("token"->tokenStr)
