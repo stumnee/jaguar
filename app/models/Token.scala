@@ -70,7 +70,7 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     val query = Json.obj("token" -> token, "username"->username)
     val updateModifier = BSONDocument(
       "$set" -> BSONDocument(
-        "revoked" -> BSONDateTime(new DateTime().getMillis)
+        "revoked" -> new DateTime().toString(pattern)
 
       )
     )
