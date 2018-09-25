@@ -11,6 +11,7 @@ PATCH     /events/:id                  controllers.EventController.update(id: re
 + nocsrf
 DELETE    /events/:id                  controllers.EventController.delete(id: reactivemongo.bson.BSONObjectID)
 
+GET     /users                          controllers.UserController.list
 + nocsrf
 POST    /users                          controllers.UserController.create
 

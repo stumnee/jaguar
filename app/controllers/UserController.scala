@@ -17,6 +17,14 @@ import TokenJsonFormats._
 
 @Api(value = "/users")
 class UserController @Inject()(cc: ControllerComponents, userRepository: UserRepository, tokenRepository: TokenRepository) extends AbstractController(cc) {
+
+
+  def list() = Action.async { implicit req =>
+    userRepository.getAll().map { users =>
+      Ok(Json.toJson(users))
+    }
+  }
+
   @ApiImplicitParams(Array(
     new ApiImplicitParam(value = "The User to add, in Json Format", required = true, dataType = "models.UserDao", paramType = "body")
   ))
