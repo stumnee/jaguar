@@ -9,8 +9,9 @@ import org.joda.time.DateTime
 import play.api.libs.json.Json
 import play.api.mvc.Results
 import play.modules.reactivemongo.ReactiveMongoApi
+import reactivemongo.api.{Cursor, ReadPreference}
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.bson.{BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONObjectID}
+import reactivemongo.bson.{BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONHandler, BSONObjectID}
 import reactivemongo.play.json._
 import reactivemongo.play.json.collection.JSONCollection
 
@@ -30,7 +31,12 @@ object TokenJsonFormats{
   import play.api.libs.json.JodaReads
 
   val pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-  implicit val dateFormat = Format[DateTime](JodaReads.jodaDateReads(pattern), JodaWrites.jodaDateWrites(pattern))
+  implicit val dateFormat = Format[DateTime](
+    (__ \ "$date").read[Long].map { date =>
+    new DateTime(date)
+  }, new Writes[DateTime] {
+      override def writes(o: DateTime): JsValue = Json.obj("$date" -> o.getMillis())
+    })
 
   implicit val tokenFormat: OFormat[Token] = Json.format[Token]
 
@@ -77,6 +83,14 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     tokensCollection.flatMap(_.findAndUpdate(query, updateModifier, fetchNewObject = true).map(_.result[Token]))
   }
 
+
+  def getUserTokens(username: String): Future[Seq[Token]] = {
+    val query = Json.obj("username"->username)
+
+    tokensCollection.flatMap(_.find(query)
+      .cursor[Token](ReadPreference.primary)
+      .collect[Seq](100, Cursor.FailOnError[Seq[Token]]()))
+  }
 
   def getToken(tokenStr: String): Future[Option[Token]] = {
     val query = Json.obj("token"->tokenStr)

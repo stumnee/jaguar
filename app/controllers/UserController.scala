@@ -47,6 +47,12 @@ class UserController @Inject()(cc: ControllerComponents, userRepository: UserRep
     }
   }
 
+  def listTokens(username: String) = Action.async { req =>
+    tokenRepository.getUserTokens(username).map{ tokens =>
+      Ok(Json.toJson(tokens))
+    }
+  }
+
   def deleteToken(username: String, token: String) = Action.async { req =>
 
     tokenRepository.delete(username, token).map {
