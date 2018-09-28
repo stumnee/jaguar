@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 import actors.MyWebSocketActor
 import io.swagger.annotations._
-import models.JsonFormats._
+import models.EventJsonFormats._
 import models.{Event, EventDao, EventRepository}
 import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}

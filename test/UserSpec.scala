@@ -34,7 +34,7 @@ class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
   }
 
   "Add an User" in {
-    val Some(result) = route(app, FakeRequest(POST, "/users").withJsonBody(JsObject(List("username"->JsString("drew"), "password"->JsString("breeze")))))
+    val Some(result) = route(app, FakeRequest(POST, "/users").withJsonBody(JsObject(List("username"->JsString("Drew"), "password"->JsString("Breeze")))))
     status(result) mustBe CREATED
   }
 
@@ -67,6 +67,18 @@ class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
     status(result) mustBe CREATED
     token.username mustEqual user.username
     token.token.length > 0 mustBe true
+  }
+
+  "List all tokens" in {
+    val query = BSONDocument()
+    val Some(user) =  await(users.flatMap(_.find(query).one[User]))
+    val Some(tokenResult) = route(app, FakeRequest(POST, "/users/" + user.username + "/token"))
+    val token = contentAsJson(tokenResult).as[Token]
+    status(tokenResult) mustBe CREATED
+    val Some(tokenListResults) = route(app, FakeRequest(GET, "/users/" + user.username + "/token"))
+    status(tokenListResults) mustBe OK
+
+//    val tokens = contentAsJson(tokenListResults).as[List[Token]]
   }
 
   after {

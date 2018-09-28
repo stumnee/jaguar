@@ -1,7 +1,7 @@
 import org.scalatest.BeforeAndAfter
 import reactivemongo.play.json.collection.JSONCollection
 import models.Event
-import models.JsonFormats._
+import models.EventJsonFormats._
 import org.joda.time.DateTime
 import play.api.test.FakeRequest
 import play.api.test.Helpers._

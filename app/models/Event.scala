@@ -34,7 +34,7 @@ case class Event (
   createdTime: Option[DateTime]
 )
 
-object JsonFormats{
+object EventJsonFormats{
   import play.api.libs.json._
   import play.api.libs.json.JodaWrites
   import play.api.libs.json.JodaReads
@@ -119,7 +119,7 @@ object JsonFormats{
 }
 
 class EventRepository @Inject()(implicit ec: ExecutionContext, reactiveMongoApi: ReactiveMongoApi) {
-  import JsonFormats._
+  import EventJsonFormats._
 
 
   def eventsCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("events"))

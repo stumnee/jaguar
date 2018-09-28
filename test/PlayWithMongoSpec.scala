@@ -7,7 +7,7 @@ trait PlayWithMongoSpec extends PlaySpec with GuiceOneAppPerSuite {
 
   override def fakeApplication = new GuiceApplicationBuilder()
     .configure(
-      "mongodb.uri" -> "mongodb://localhost:27017/todos-test"
+      "mongodb.uri" -> "mongodb://localhost:27017/jaguar-test"
     )
     .build()
 

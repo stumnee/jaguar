@@ -4,13 +4,11 @@ import java.math.BigInteger
 import java.security.SecureRandom
 import javax.inject.Inject
 
-import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import org.joda.time.DateTime
 import play.api.libs.json.Json
 import play.api.mvc.Results
 import play.modules.reactivemongo.ReactiveMongoApi
 import reactivemongo.api.{Cursor, ReadPreference}
-import reactivemongo.api.commands.WriteResult
 import reactivemongo.bson.{BSONDateTime, BSONDocument, BSONDocumentReader, BSONDocumentWriter, BSONHandler, BSONObjectID}
 import reactivemongo.play.json._
 import reactivemongo.play.json.collection.JSONCollection
@@ -27,16 +25,7 @@ case class Token (
 
 object TokenJsonFormats{
   import play.api.libs.json._
-  import play.api.libs.json.JodaWrites
-  import play.api.libs.json.JodaReads
-
-  val pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-  implicit val dateFormat = Format[DateTime](
-    (__ \ "$date").read[Long].map { date =>
-    new DateTime(date)
-  }, new Writes[DateTime] {
-      override def writes(o: DateTime): JsValue = Json.obj("$date" -> o.getMillis())
-    })
+  import utils.JsonFormats._
 
   implicit val tokenFormat: OFormat[Token] = Json.format[Token]
 
@@ -76,8 +65,7 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     val query = Json.obj("token" -> token, "username"->username)
     val updateModifier = BSONDocument(
       "$set" -> BSONDocument(
-        "revoked" -> new DateTime().toString(pattern)
-
+        "revoked" ->  Json.obj("$date"->new DateTime().getMillis)
       )
     )
     tokensCollection.flatMap(_.findAndUpdate(query, updateModifier, fetchNewObject = true).map(_.result[Token]))
