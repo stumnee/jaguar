@@ -2,9 +2,8 @@ import org.scalatest.BeforeAndAfter
 import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.Future
-import models.{Token, User}
+import models.{User}
 import models.UserJsonFormats._
-import models.TokenJsonFormats._
 import reactivemongo.play.json._
 import play.api.libs.json.{JsObject, JsString}
 import play.api.test.FakeRequest
@@ -23,6 +22,7 @@ class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
       users.flatMap(_.insert[User](ordered = false).many(List(
         User(_id = None, username = "Jane", password = "badpass")
       )))
+
     }
   }
 
@@ -57,28 +57,6 @@ class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
     val Some(result) = route(app, FakeRequest(PATCH, "/users/" + user.username).withJsonBody(payload))
 
     status(result) mustBe OK
-  }
-
-  "Create a Token for the user" in {
-    val query = BSONDocument()
-    val Some(user) =  await(users.flatMap(_.find(query).one[User]))
-    val Some(result) = route(app, FakeRequest(POST, "/users/" + user.username + "/token"))
-    val token = contentAsJson(result).as[Token]
-    status(result) mustBe CREATED
-    token.username mustEqual user.username
-    token.token.length > 0 mustBe true
-  }
-
-  "List all tokens" in {
-    val query = BSONDocument()
-    val Some(user) =  await(users.flatMap(_.find(query).one[User]))
-    val Some(tokenResult) = route(app, FakeRequest(POST, "/users/" + user.username + "/token"))
-    val token = contentAsJson(tokenResult).as[Token]
-    status(tokenResult) mustBe CREATED
-    val Some(tokenListResults) = route(app, FakeRequest(GET, "/users/" + user.username + "/token"))
-    status(tokenListResults) mustBe OK
-
-//    val tokens = contentAsJson(tokenListResults).as[List[Token]]
   }
 
   after {

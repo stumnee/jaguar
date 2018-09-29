@@ -4,7 +4,7 @@ import javax.inject.Inject
 
 import io.swagger.annotations._
 import models._
-import play.api.mvc.{AbstractController, ControllerComponents}
+import play.api.mvc._
 
 import scala.concurrent.Future
 import models.UserJsonFormats._
@@ -16,7 +16,7 @@ import TokenJsonFormats._
 
 
 @Api(value = "/users")
-class UserController @Inject()(cc: ControllerComponents, userRepository: UserRepository, tokenRepository: TokenRepository) extends AbstractController(cc) {
+class UserController @Inject()(cc: ControllerComponents, val userRepository: UserRepository, tokenRepository: TokenRepository) extends AbstractController(cc) with UserValidation {
 
 
   def list() = Action.async { implicit req =>
@@ -101,4 +101,35 @@ class UserController @Inject()(cc: ControllerComponents, userRepository: UserRep
       case None => NotFound
     }
   }
+}
+
+
+trait UserValidation { self: AbstractController =>
+
+  @Inject() val userRepository: UserRepository
+
+  def withUserValidation(f: => Request[AnyContent] => Result) = Action.async { implicit request =>
+
+    Future.successful(f(request))
+//
+//    userRepository.getByUsername(username) flatMap { userOption: Option[User] =>
+//      userOption.map{user=>
+//        tokenRepository.create(user.username).map{results=>
+//          Created(Json.toJson(results.get))
+//        }
+//      }.getOrElse(Future.successful(Ok("")))
+//    }
+//
+//    authToken match {
+//      case Some(t) => validateToken(t) map {
+//        case Some(token) => if (new DateTime().isAfter(token.expiry))
+//          Unauthorized("API token expired")
+//        else
+//          token.revoked.fold(f(request)) {_ => Unauthorized("API token revoked") }
+//        case _ => Unauthorized("Invalid API token")
+//      }
+//      case _ => Future.successful(Unauthorized("No valid API token"))
+//    }
+  }
+
 }
