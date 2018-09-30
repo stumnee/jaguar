@@ -36,24 +36,19 @@ class UserController @Inject()(cc: ControllerComponents, val userRepository: Use
     }.getOrElse(Future.successful(BadRequest("Invalid User format")))
   }
 
-  def createToken(username: String) = Action.async { req =>
-
-    userRepository.getByUsername(username) flatMap { userOption: Option[User] =>
-      userOption.map{user=>
-          tokenRepository.create(user.username).map{results=>
-            Created(Json.toJson(results.get))
-          }
-      }.getOrElse(Future.successful(Ok("")))
-    }
+  def createToken(username: String) = withUserValidation { req =>
+      tokenRepository.create(username).map{results=>
+        Created(Json.toJson(results.get))
+      }
   }
 
-  def listTokens(username: String) = Action.async { req =>
+  def listTokens(username: String) = withUserValidation { req =>
     tokenRepository.getUserTokens(username).map{ tokens =>
       Ok(Json.toJson(tokens))
     }
   }
 
-  def deleteToken(username: String, token: String) = Action.async { req =>
+  def deleteToken(username: String, token: String) = withUserValidation { req =>
 
     tokenRepository.delete(username, token).map {
       case Some(t) => Ok(Json.toJson(t))
@@ -61,11 +56,22 @@ class UserController @Inject()(cc: ControllerComponents, val userRepository: Use
     }
   }
 
-  def revokeToken(username: String, token: String) = Action.async { req =>
-    tokenRepository.revoke(username, token).map {
-      case Some(t) => Ok(Json.toJson(t))
-      case None => NotFound
+  def updateToken(username: String, token: String) = withUserValidation { req =>
+
+    val action:String = req.queryString.getOrElse("action", "").toString
+
+    action.match {
+      case "revoke" => tokenRepository.revoke(username, token).map {
+                          case Some(t) => Ok(Json.toJson(t))
+                          case None => NotFound
+                        }
+
+      case "unrevoke" => tokenRepository.unrevoke(username, token).map {
+                          case Some(t) => Ok(Json.toJson(t))
+                          case None => NotFound
+                        }
     }
+
   }
 
   @ApiOperation(
@@ -108,28 +114,17 @@ trait UserValidation { self: AbstractController =>
 
   @Inject() val userRepository: UserRepository
 
-  def withUserValidation(f: => Request[AnyContent] => Result) = Action.async { implicit request =>
+  def withUserValidation(f: => Request[AnyContent] => Future[Result]) = Action.async { implicit request =>
 
-    Future.successful(f(request))
-//
-//    userRepository.getByUsername(username) flatMap { userOption: Option[User] =>
-//      userOption.map{user=>
-//        tokenRepository.create(user.username).map{results=>
-//          Created(Json.toJson(results.get))
-//        }
-//      }.getOrElse(Future.successful(Ok("")))
-//    }
-//
-//    authToken match {
-//      case Some(t) => validateToken(t) map {
-//        case Some(token) => if (new DateTime().isAfter(token.expiry))
-//          Unauthorized("API token expired")
-//        else
-//          token.revoked.fold(f(request)) {_ => Unauthorized("API token revoked") }
-//        case _ => Unauthorized("Invalid API token")
-//      }
-//      case _ => Future.successful(Unauthorized("No valid API token"))
-//    }
+    val uriPattern = "/users/([^\\/]+)/token".r
+    val username = uriPattern.findFirstMatchIn(request.uri).get
+
+    userRepository.getByUsername(username.group(1)) flatMap { userOption: Option[User] =>
+      userOption match {
+        case Some(_) => f(request)
+        case None => Future.successful(NotFound("Invalid username"))
+      }
+    }
   }
 
 }

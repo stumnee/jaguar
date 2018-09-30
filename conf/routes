@@ -2,29 +2,29 @@
 # This file defines all application routes (Higher priority routes first)
 # ~~~~
 
-GET       /events                      controllers.EventController.getAll
-GET       /events/:id                  controllers.EventController.get(id: reactivemongo.bson.BSONObjectID)
+GET       /events                           controllers.EventController.getAll
+GET       /events/:id                       controllers.EventController.get(id: reactivemongo.bson.BSONObjectID)
 + nocsrf
-POST      /events                      controllers.EventController.create
+POST      /events                           controllers.EventController.create
 + nocsrf
-PATCH     /events/:id                  controllers.EventController.update(id: reactivemongo.bson.BSONObjectID)
+PATCH     /events/:id                       controllers.EventController.update(id: reactivemongo.bson.BSONObjectID)
 + nocsrf
-DELETE    /events/:id                  controllers.EventController.delete(id: reactivemongo.bson.BSONObjectID)
+DELETE    /events/:id                       controllers.EventController.delete(id: reactivemongo.bson.BSONObjectID)
 
-GET     /users                          controllers.UserController.list
+GET     /users                              controllers.UserController.list
 + nocsrf
-POST    /users                          controllers.UserController.create
+POST    /users                              controllers.UserController.create
 
-GET    /users/:username/token          controllers.UserController.listTokens(username: String)
-
-+ nocsrf
-POST    /users/:username/token          controllers.UserController.createToken(username: String)
+GET    /users/:username/token               controllers.UserController.listTokens(username: String)
 
 + nocsrf
-DELETE    /users/:username/token/:token controllers.UserController.deleteToken(username: String, token: String)
+POST    /users/:username/token              controllers.UserController.createToken(username: String)
 
 + nocsrf
-PATCH    /users/:username/token/:token controllers.UserController.revokeToken(username: String, token: String)
+DELETE    /users/:username/token/:token     controllers.UserController.deleteToken(username: String, token: String)
+
++ nocsrf
+PATCH    /users/:username/token/:token      controllers.UserController.updateToken(username: String, token: String)
 
 + nocsrf
 PATCH     /users/:username             controllers.UserController.update(username: String)

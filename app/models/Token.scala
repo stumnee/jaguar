@@ -30,22 +30,24 @@ object TokenJsonFormats{
   implicit val tokenFormat: OFormat[Token] = Json.format[Token]
 
 }
-
-class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi: ReactiveMongoApi) {
+object TokenRepository {
   val DefaultExpirationDays = 7
   val TokenSize = 64
-
-  import TokenJsonFormats._
-
-  def tokensCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("tokens"))
 
   def generateToken() : String = {
     val random = new SecureRandom()
     new BigInteger(TokenSize * 5, random).toString(32)
   }
+}
+class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi: ReactiveMongoApi) {
+
+
+  import TokenJsonFormats._
+
+  def tokensCollection: Future[JSONCollection] = reactiveMongoApi.database.map(_.collection("tokens"))
 
   def create(username: String): Future[Option[Token]] = {
-    val token = Token(BSONObjectID.generate(), username, generateToken(), None, new DateTime().plusDays(DefaultExpirationDays))
+    val token = Token(BSONObjectID.generate(), username, TokenRepository.generateToken(), None, new DateTime().plusDays(TokenRepository.DefaultExpirationDays))
 
     for {
       _ <- tokensCollection.flatMap(_.insert(token))
@@ -66,6 +68,16 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
     val updateModifier = BSONDocument(
       "$set" -> BSONDocument(
         "revoked" ->  Json.obj("$date"->new DateTime().getMillis)
+      )
+    )
+    tokensCollection.flatMap(_.findAndUpdate(query, updateModifier, fetchNewObject = true).map(_.result[Token]))
+  }
+
+  def unrevoke(username: String, token: String): Future[Option[Token]] = {
+    val query = Json.obj("token" -> token, "username"->username)
+    val updateModifier = BSONDocument(
+      "$set" -> BSONDocument(
+        "revoked" ->  null
       )
     )
     tokensCollection.flatMap(_.findAndUpdate(query, updateModifier, fetchNewObject = true).map(_.result[Token]))
