@@ -58,19 +58,22 @@ class UserController @Inject()(cc: ControllerComponents, val userRepository: Use
 
   def updateToken(username: String, token: String) = withUserValidation { req =>
 
-    val action:String = req.queryString.getOrElse("action", "").toString
+    req.queryString.get("action") match {
+      case Some(action) => action.head match {
+                            case "revoke" => tokenRepository.revoke(username, token).map {
+                              case Some(t) => Ok(Json.toJson(t))
+                              case None => NotFound
+                            }
 
-    action.match {
-      case "revoke" => tokenRepository.revoke(username, token).map {
-                          case Some(t) => Ok(Json.toJson(t))
-                          case None => NotFound
-                        }
-
-      case "unrevoke" => tokenRepository.unrevoke(username, token).map {
-                          case Some(t) => Ok(Json.toJson(t))
-                          case None => NotFound
-                        }
+                            case "unrevoke" => tokenRepository.unrevoke(username, token).map {
+                              case Some(t) => Ok(Json.toJson(t))
+                              case None => NotFound
+                            }
+                          }
+      case None => Future.successful(BadRequest)
     }
+
+
 
   }
 

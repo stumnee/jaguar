@@ -69,8 +69,43 @@ class TokenSpec extends PlayWithMongoSpec with BeforeAndAfter {
     val query = BSONDocument()
     val Some(token) = await(tokens.flatMap(_.find(query).one[Token]))
 
-    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token?action=revoke"))
+    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}?action=revoke"))
     status(result) mustBe OK
+
+
+    val q = BSONDocument("_id" -> token._id)
+    val Some(t) = await(tokens.flatMap(_.find(q).one[Token]))
+
+    t.revoked.isEmpty mustBe false
+  }
+
+  "Unrevoke a token" in {
+    val query = BSONDocument()
+    val Some(token) = await(tokens.flatMap(_.find(query).one[Token]))
+
+    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}?action=revoke"))
+    status(result) mustBe OK
+
+
+    val q = BSONDocument("_id" -> token._id)
+    val Some(tokenRevoked) = await(tokens.flatMap(_.find(q).one[Token]))
+
+    tokenRevoked.revoked.isEmpty mustBe false
+
+    val Some(unrevokeResult) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}?action=unrevoke"))
+    status(unrevokeResult) mustBe OK
+
+    val Some(tokenUnrevoked) = await(tokens.flatMap(_.find(q).one[Token]))
+
+    tokenUnrevoked.revoked.isEmpty mustBe true
+  }
+
+  "Invalid token action" in {
+    val query = BSONDocument()
+    val Some(token) = await(tokens.flatMap(_.find(query).one[Token]))
+
+    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}"))
+    status(result) mustBe BAD_REQUEST
   }
 
   after {

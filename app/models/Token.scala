@@ -76,8 +76,8 @@ class TokenRepository @Inject()(implicit  ec: ExecutionContext, reactiveMongoApi
   def unrevoke(username: String, token: String): Future[Option[Token]] = {
     val query = Json.obj("token" -> token, "username"->username)
     val updateModifier = BSONDocument(
-      "$set" -> BSONDocument(
-        "revoked" ->  null
+      "$unset" -> BSONDocument(
+        "revoked" -> 1
       )
     )
     tokensCollection.flatMap(_.findAndUpdate(query, updateModifier, fetchNewObject = true).map(_.result[Token]))
