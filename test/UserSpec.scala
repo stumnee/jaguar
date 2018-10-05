@@ -14,13 +14,19 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
   var users: Future[JSONCollection] = _
+  var userJane: User = _
+  var userTom: User = _
 
   before {
     await {
+      userJane = User(_id = None, username = "Jane", password = "badpass")
+      userTom = User(_id = None, username = "Tom", password = "badpass")
+
       users = reactiveMongoApi.database.map(_.collection("users"))
 
       users.flatMap(_.insert[User](ordered = false).many(List(
-        User(_id = None, username = "Jane", password = "badpass")
+        userJane,
+        userTom
       )))
 
     }
@@ -29,7 +35,7 @@ class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
   "Get all Users" in {
     val Some(result) = route(app, FakeRequest(GET, "/users"))
     val resultList = contentAsJson(result).as[List[User]]
-    resultList.length mustEqual 1
+    resultList.length mustEqual 2
     status(result) mustBe OK
   }
 
@@ -44,17 +50,15 @@ class UserSpec extends PlayWithMongoSpec with BeforeAndAfter {
   }
 
   "Delete an User" in {
-    val query = BSONDocument()
-    val Some(user) =  await(users.flatMap(_.find(query).one[User]))
-    val Some(result) = route(app, FakeRequest(DELETE, "/users/" + user.username))
+    val Some(result) = route(app, FakeRequest(DELETE, "/users/" + userJane.username))
     status(result) mustBe OK
   }
 
   "Update an User" in {
     val payload = JsObject(List("_id"->JsString("id"), "username"->JsString("updated username"), "password"->JsString("updated password")))
     val query = BSONDocument()
-    val Some(user) =  await(users.flatMap(_.find(query).one[User]))
-    val Some(result) = route(app, FakeRequest(PATCH, "/users/" + user.username).withJsonBody(payload))
+
+    val Some(result) = route(app, FakeRequest(PATCH, "/users/" + userJane.username).withJsonBody(payload))
 
     status(result) mustBe OK
   }

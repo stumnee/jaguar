@@ -17,6 +17,9 @@ class TokenSpec extends PlayWithMongoSpec with BeforeAndAfter {
   var users: Future[JSONCollection] = _
   var username: String = _
   var tokens: Future[JSONCollection] = _
+  var token1: Token = _
+  var token2: Token = _
+  var token3: Token = _
 
   before {
     await {
@@ -31,10 +34,14 @@ class TokenSpec extends PlayWithMongoSpec with BeforeAndAfter {
 
     }
     await {
+      token1 = Token(_id=BSONObjectID.generate(), username=username, token=TokenRepository.generateToken(), revoked =  None, expiry = new DateTime())
+      token2 = Token(_id=BSONObjectID.generate(), username=username, token=TokenRepository.generateToken(), revoked =  None, expiry = new DateTime())
+      token3 = Token(_id=BSONObjectID.generate(), username=username, token=TokenRepository.generateToken(), revoked =  None, expiry = new DateTime())
       tokens = reactiveMongoApi.database.map(_.collection("tokens"))
       tokens.flatMap(_.insert[Token](ordered = false).many(List(
-        Token(_id=BSONObjectID.generate(), username=username, token=TokenRepository.generateToken(), revoked =  None, expiry = new DateTime()),
-        Token(_id=BSONObjectID.generate(), username=username, token=TokenRepository.generateToken(), revoked =  None, expiry = new DateTime())
+        token1,
+        token2,
+        token3
       )))
     }
 
@@ -55,44 +62,38 @@ class TokenSpec extends PlayWithMongoSpec with BeforeAndAfter {
   }
 
   "List all tokens" in {
-    val Some(tokenResult) = route(app, FakeRequest(POST, s"/users/$username/token"))
-    val token = contentAsJson(tokenResult).as[Token]
-    status(tokenResult) mustBe CREATED
     val Some(tokenListResults) = route(app, FakeRequest(GET, s"/users/$username/token"))
     status(tokenListResults) mustBe OK
+
     val allTokens = contentAsJson(tokenListResults).as[List[Token]]
+
     allTokens.nonEmpty mustBe true
-    allTokens.count(_.token == token.token) mustBe 1
+    allTokens.count(_.token == token1.token) mustBe 1
+    allTokens.count(_.token == token2.token) mustBe 1
   }
 
   "Revoke a token" in {
-    val query = BSONDocument()
-    val Some(token) = await(tokens.flatMap(_.find(query).one[Token]))
-
-    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}?action=revoke"))
+    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token1.token}?action=revoke"))
     status(result) mustBe OK
 
 
-    val q = BSONDocument("_id" -> token._id)
+    val q = BSONDocument("_id" -> token1._id)
     val Some(t) = await(tokens.flatMap(_.find(q).one[Token]))
 
     t.revoked.isEmpty mustBe false
   }
 
   "Unrevoke a token" in {
-    val query = BSONDocument()
-    val Some(token) = await(tokens.flatMap(_.find(query).one[Token]))
-
-    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}?action=revoke"))
+    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token1.token}?action=revoke"))
     status(result) mustBe OK
 
 
-    val q = BSONDocument("_id" -> token._id)
+    val q = BSONDocument("_id" -> token1._id)
     val Some(tokenRevoked) = await(tokens.flatMap(_.find(q).one[Token]))
 
     tokenRevoked.revoked.isEmpty mustBe false
 
-    val Some(unrevokeResult) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}?action=unrevoke"))
+    val Some(unrevokeResult) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token1.token}?action=unrevoke"))
     status(unrevokeResult) mustBe OK
 
     val Some(tokenUnrevoked) = await(tokens.flatMap(_.find(q).one[Token]))
@@ -100,11 +101,8 @@ class TokenSpec extends PlayWithMongoSpec with BeforeAndAfter {
     tokenUnrevoked.revoked.isEmpty mustBe true
   }
 
-  "Invalid token action" in {
-    val query = BSONDocument()
-    val Some(token) = await(tokens.flatMap(_.find(query).one[Token]))
-
-    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token.token}"))
+  "Invalid token action with no action param specified" in {
+    val Some(result) = route(app, FakeRequest(PATCH, s"/users/$username/token/${token1.token}"))
     status(result) mustBe BAD_REQUEST
   }
 
