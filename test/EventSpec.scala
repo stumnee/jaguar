@@ -23,9 +23,9 @@ class EventSpec extends PlayWithMongoSpec with BeforeAndAfter {
     await {
       events = reactiveMongoApi.database.map(_.collection("events"))
 
-      event1 = Event(id = Some(BSONObjectID.generate().toString()), tags = Seq("tag1"), Seq(), title = "title 1", data = "data 1", createdTime = Some(new DateTime()))
-      event2 = Event(id = Some(BSONObjectID.generate().toString()), tags = Seq("tag2"), Seq(), title = "title 2", data = "data 2", createdTime = Some(new DateTime()))
-      event3 = Event(id = Some(BSONObjectID.generate().toString()), tags = Seq("tag3"), Seq(), title = "title 3", data = "data 3", createdTime = Some(new DateTime()))
+      event1 = Event(id = Some(BSONObjectID.generate().toString()), tags = Seq("tag1"), Seq(), title = "title 1", data = "data 1", created = DateTime.parse("2017-01-01"))
+      event2 = Event(id = Some(BSONObjectID.generate().toString()), tags = Seq("tag2"), Seq(), title = "title 2", data = "data 2", created = DateTime.parse("2018-01-01"))
+      event3 = Event(id = Some(BSONObjectID.generate().toString()), tags = Seq("tag3"), Seq(), title = "title 3", data = "data 3", created = DateTime.parse("2018-01-31"))
       events.flatMap(_.insert[Event](ordered = false).many(List(
         event1,
         event2,
@@ -41,7 +41,7 @@ class EventSpec extends PlayWithMongoSpec with BeforeAndAfter {
   "Get all Events" in {
     val Some(result) = route(app, FakeRequest(GET, "/events"))
     val resultList = contentAsJson(result).as[List[Event]]
-    resultList.length mustEqual 1
+    resultList.length mustEqual 3
     status(result) mustBe OK
   }
 
@@ -49,18 +49,30 @@ class EventSpec extends PlayWithMongoSpec with BeforeAndAfter {
     val Some(result) = route(app, FakeRequest(GET, "/events?created>2018-01-01"))
     val resultList = contentAsJson(result).as[List[Event]]
     status(result) mustBe OK
-    resultList.filter(_.createdTime > new DateTime("2018-01-01")).length == resultList.length
+    val filtered = resultList.filter(_.created.isAfter(new DateTime("2018-01-01").minusHours(1)))
+    println(filtered)
+    filtered.length == resultList.length
+  }
+
+  "Get all events created before 2018-01-01" in {
+    val Some(result) = route(app, FakeRequest(GET, "/events?created<2018-01-01"))
+    val resultList = contentAsJson(result).as[List[Event]]
+    status(result) mustBe OK
+    val filtered = resultList.filter(_.created.isBefore(new DateTime("2018-01-01")))
+    println(filtered)
+    filtered.length == resultList.length
+    filtered == resultList.length
   }
 
   "Get all events created equal to certain date" in {
-    val Some(result) = route(app, FakeRequest(GET, s"/events?created>${event1.createdTime.toString}"))
+    val Some(result) = route(app, FakeRequest(GET, s"/events?created>${event1.created.toString}"))
     val resultList = contentAsJson(result).as[List[Event]]
     status(result) mustBe OK
     resultList.length > 1 mustBe true
   }
 
   "Add an Event" in {
-    val payload = Event(id = Some("123456"), tags = Seq("tagNew"), Seq(), title = "New Title", data = "data new", createdTime = Some(new DateTime()))
+    val payload = Event(id = Some("123456"), tags = Seq("tagNew"), Seq(), title = "New Title", data = "data new", created = new DateTime())
     val Some(result) = route(app, FakeRequest(POST, "/events").withJsonBody(Json.toJson(payload)))
     status(result) mustBe CREATED
   }

@@ -31,7 +31,7 @@ case class Event (
   files: Seq[String],
   title: String,
   data: String,
-  createdTime: Option[DateTime]
+  created: DateTime
 )
 
 object EventJsonFormats{
@@ -61,7 +61,7 @@ object EventJsonFormats{
         files,
         (jsonObject \ "title").as[String],
         (jsonObject \ "data").as[String],
-        Some(new DateTime(id.time))))
+        new DateTime(id.time)))
 
     }
 
@@ -76,7 +76,7 @@ object EventJsonFormats{
         }),
         "title" -> JsString(event.title),
         "data" -> JsString(event.data),
-        "created" -> JsString(event.createdTime.get.toString)
+        "created" -> JsString(event.created.toString)
       ))
     }
   }
